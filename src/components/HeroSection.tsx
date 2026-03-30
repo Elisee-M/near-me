@@ -10,7 +10,7 @@ const HeroSection = () => {
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${kigaliBg})`, filter: 'blur(6px) brightness(0.3)', transform: 'scale(1.1)' }}
+        style={{ backgroundImage: `url(${kigaliBg})`, filter: 'blur(2px) brightness(0.4)', transform: 'scale(1.05)' }}
       />
       <div className="absolute inset-0 bg-background/60" />
 
