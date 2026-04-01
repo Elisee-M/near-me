@@ -33,6 +33,10 @@ const ClickableMap = ({ position, onPositionChange }: Props) => {
           attribution='&copy; OSM'
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         />
+        <TileLayer
+          url="https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png"
+          attribution='&copy; Stamen'
+        />
         <ClickHandler onClick={onPositionChange} />
         {position && (
           <Marker position={[position.lat, position.lng]}>

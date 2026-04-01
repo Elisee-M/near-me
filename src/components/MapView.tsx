@@ -56,6 +56,10 @@ const MapView = ({ userPosition, services, onServiceClick, onMapClick, selectedP
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         />
+        <TileLayer
+          url="https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png"
+          attribution='&copy; Stamen'
+        />
         <RecenterMap lat={center.lat} lng={center.lng} />
 
         {userPosition && (
