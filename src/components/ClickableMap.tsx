@@ -31,7 +31,7 @@ const ClickableMap = ({ position, onPositionChange }: Props) => {
       <MapContainer center={[center.lat, center.lng]} zoom={14} className="h-full w-full">
         <TileLayer
           attribution='&copy; OSM'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         />
         <ClickHandler onClick={onPositionChange} />
         {position && (

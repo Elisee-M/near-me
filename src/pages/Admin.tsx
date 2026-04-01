@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase, Service } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import ClickableMap from '@/components/ClickableMap';
-import { Loader2, Plus, Pencil, Trash2, LogOut } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, LogOut, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
-const CATEGORIES = ['Restaurant', 'Hotel', 'Clothing Shop', 'Papeterie', 'Lounge', 'Other'];
+const DEFAULT_CATEGORIES = ['Restaurant', 'Hotel', 'Clothing Shop', 'Papeterie', 'Lounge'];
 
 const Admin = () => {
   const [session, setSession] = useState<any>(null);
@@ -19,13 +19,20 @@ const Admin = () => {
   const [password, setPassword] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  // Dynamic categories from DB
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+
   // Form state
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [description, setDescription] = useState('');
   const [contact, setContact] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,7 +54,13 @@ const Admin = () => {
 
   const fetchServices = async () => {
     const { data } = await supabase.from('services').select('*').order('created_at', { ascending: false });
-    if (data) setServices(data);
+    if (data) {
+      setServices(data);
+      // Extract unique categories from existing services and merge with defaults
+      const dbCategories = [...new Set(data.map((s: Service) => s.category))];
+      const merged = [...new Set([...DEFAULT_CATEGORIES, ...dbCategories])];
+      setCategories(merged);
+    }
   };
 
   const handleLogin = async () => {
@@ -59,7 +72,49 @@ const Admin = () => {
 
   const resetForm = () => {
     setEditId(null); setName(''); setCategory(''); setDescription('');
-    setContact(''); setImageUrl(''); setLat(null); setLng(null);
+    setContact(''); setImageUrl(''); setImageFile(null); setImagePreview(null);
+    setLat(null); setLng(null); setShowCustomCategory(false); setCustomCategory('');
+  };
+
+  const handleCategoryChange = (value: string) => {
+    if (value === '__other__') {
+      setShowCustomCategory(true);
+      setCategory('');
+    } else {
+      setShowCustomCategory(false);
+      setCustomCategory('');
+      setCategory(value);
+    }
+  };
+
+  const handleCustomCategoryConfirm = () => {
+    const trimmed = customCategory.trim();
+    if (!trimmed) return;
+    if (!categories.includes(trimmed)) {
+      setCategories(prev => [...prev, trimmed]);
+    }
+    setCategory(trimmed);
+    setShowCustomCategory(false);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setImageUrl('');
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+    const { error } = await supabase.storage.from('service-images').upload(fileName, file);
+    if (error) {
+      toast.error('Image upload failed: ' + error.message);
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from('service-images').getPublicUrl(fileName);
+    return urlData.publicUrl;
   };
 
   const handleSave = async () => {
@@ -68,7 +123,15 @@ const Admin = () => {
       return;
     }
     setSaving(true);
-    const payload = { name, category, description, contact, image_url: imageUrl || null, latitude: lat, longitude: lng };
+
+    let finalImageUrl = imageUrl || null;
+    if (imageFile) {
+      const uploaded = await uploadImage(imageFile);
+      if (uploaded) finalImageUrl = uploaded;
+      else { setSaving(false); return; }
+    }
+
+    const payload = { name, category, description, contact, image_url: finalImageUrl, latitude: lat, longitude: lng };
 
     if (editId) {
       const { error } = await supabase.from('services').update(payload).eq('id', editId);
@@ -85,7 +148,10 @@ const Admin = () => {
   const handleEdit = (s: Service) => {
     setEditId(s.id); setName(s.name); setCategory(s.category);
     setDescription(s.description); setContact(s.contact);
-    setImageUrl(s.image_url || ''); setLat(s.latitude); setLng(s.longitude);
+    setImageUrl(s.image_url || ''); setImageFile(null);
+    setImagePreview(s.image_url || null);
+    setLat(s.latitude); setLng(s.longitude);
+    setShowCustomCategory(false); setCustomCategory('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -139,14 +205,45 @@ const Admin = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input placeholder="Service name" value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" />
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Category" /></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            
+            <div className="space-y-2">
+              {showCustomCategory ? (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type new category..."
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCustomCategoryConfirm()}
+                    className="bg-secondary border-border flex-1"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCustomCategoryConfirm} className="gradient-primary border-0">Add</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowCustomCategory(false); setCustomCategory(''); }}>Cancel</Button>
+                </div>
+              ) : (
+                <Select value={category} onValueChange={handleCategoryChange}>
+                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Category" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    <SelectItem value="__other__">+ Other (type custom)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <Input placeholder="Contact" value={contact} onChange={(e) => setContact(e.target.value)} className="bg-secondary border-border" />
-            <Input placeholder="Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="bg-secondary border-border" />
+            
+            {/* Image upload */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer bg-secondary border border-border rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Upload className="h-4 w-4" />
+                {imageFile ? imageFile.name : 'Upload image'}
+                <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+              </label>
+              {imagePreview && (
+                <img src={imagePreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+              )}
+            </div>
           </div>
           <Textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-secondary border-border" />
 
