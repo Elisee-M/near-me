@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MapSearchBar from './MapSearchBar';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Service } from '@/lib/supabase';
@@ -45,7 +46,7 @@ const MapView = ({ userPosition, services, onServiceClick, onMapClick, selectedP
   const center = userPosition || { lat: -1.9403, lng: 29.8739 };
 
   return (
-    <div className={`rounded-xl overflow-hidden border border-border ${className}`}>
+    <div className={`rounded-xl overflow-hidden border border-border relative ${className}`}>
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={14}
@@ -61,6 +62,7 @@ const MapView = ({ userPosition, services, onServiceClick, onMapClick, selectedP
           attribution='&copy; Stamen'
         />
         <RecenterMap lat={center.lat} lng={center.lng} />
+        <MapSearchBar />
 
         {userPosition && (
           <Marker position={[userPosition.lat, userPosition.lng]} icon={userIcon}>
