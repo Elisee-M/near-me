@@ -33,7 +33,7 @@ const ClickableMap = ({ position, onPositionChange }: Props) => {
     <div className="rounded-xl overflow-hidden border border-border h-[300px] relative">
       <button
         onClick={() => setSatellite(!satellite)}
-        className="absolute top-3 right-3 z-[1000] bg-background/95 backdrop-blur border border-border rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg hover:bg-accent transition-colors"
+        className="absolute top-3 right-3 z-[1100] bg-background/95 backdrop-blur border border-border rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg hover:bg-accent transition-colors"
       >
         {satellite ? 'Street' : 'Satellite'}
       </button>
