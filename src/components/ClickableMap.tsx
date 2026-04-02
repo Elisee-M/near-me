@@ -32,12 +32,8 @@ const ClickableMap = ({ position, onPositionChange }: Props) => {
       <MapContainer center={[center.lat, center.lng]} zoom={14} className="h-full w-full">
         <MapSearchBar onSelect={onPositionChange} />
         <TileLayer
-          attribution='&copy; OSM'
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        />
-        <TileLayer
-          url="https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png"
-          attribution='&copy; Stamen'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ClickHandler onClick={onPositionChange} />
         {position && (
