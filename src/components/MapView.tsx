@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MapSearchBar from './MapSearchBar';
 import L from 'leaflet';
@@ -44,19 +44,33 @@ type Props = {
 
 const MapView = ({ userPosition, services, onServiceClick, onMapClick, selectedPosition, className = '' }: Props) => {
   const center = userPosition || { lat: -1.9403, lng: 29.8739 };
+  const [satellite, setSatellite] = useState(false);
 
   return (
     <div className={`rounded-xl overflow-hidden border border-border relative ${className}`}>
+      <button
+        onClick={() => setSatellite(!satellite)}
+        className="absolute top-3 right-3 z-[1000] bg-background/95 backdrop-blur border border-border rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg hover:bg-accent transition-colors"
+      >
+        {satellite ? 'Street' : 'Satellite'}
+      </button>
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={14}
         className="h-full w-full min-h-[300px]"
         style={{ minHeight: '300px' }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {satellite ? (
+          <TileLayer
+            attribution='&copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          />
+        ) : (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+        )}
         <RecenterMap lat={center.lat} lng={center.lng} />
         <MapSearchBar />
 
